@@ -20,6 +20,8 @@ import { _storeData } from '../services/LocalStorage';
 import NavigationService from '../services/NavigationService';
 // import http from '../services/AxiosService';
 
+const baseUrl = 'http://localhost:3000';
+
 export function startLoginToFacebook() {
   return dispatch => {
     dispatch({ type: FB_LOGIN_START });
@@ -98,17 +100,18 @@ export function createUser(userObj) {
   };
 }
 
-export function getDestinationViewData(userId) {
+export function fetchDestinations() {
   return dispatch => {
     dispatch({ type: GET_DESTINATION_DATA_START });
-    // http
-    //   .get(`http://192.168.1.188:8080/api/search/${userId}/friends/destination`)
-    //   .then(res => {
-    //     dispatch({ type: GET_DESTINATION_DATA_RECEIVED, payload: res.data });
-    //   })
-    //   .catch(err => {
-    //     dispatch({ type: GET_DESTINATION_DATA_ERROR, payload: err });
-    //   });
+    fetch(baseUrl + '/destinations', {})
+      .then(res => res.json())
+      .then(res => {
+        console.log(res);
+        dispatch({ type: GET_DESTINATION_DATA_RECEIVED, payload: res.data });
+      })
+      .catch(err => {
+        dispatch({ type: GET_DESTINATION_DATA_ERROR, payload: err });
+      });
   };
 }
 
