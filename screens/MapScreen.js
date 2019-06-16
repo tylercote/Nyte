@@ -1,13 +1,33 @@
 import React from 'react';
-import { Text, Platform, StyleSheet } from 'react-native';
-import { Animated, Easing, View, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  Platform,
+  Dimensions,
+  Animated,
+  StyleSheet,
+  ActivityIndicator
+} from 'react-native';
 import TabBarIcon from '../components/TabBarIcon';
 import Styles from '../constants/Styles';
 import { __retrieveData } from '../services/LocalStorage';
 import { connect } from 'react-redux';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
-import { startLoginToFacebook } from '../actions';
+import MapView, {
+  PROVIDER_GOOGLE,
+  Marker,
+  ProviderPropType,
+  Animated as AnimatedMap,
+  AnimatedRegion
+} from 'react-native-maps';
 import { fetchDestinations } from '../actions';
+import { DestinationCarousel } from '../components/DestinationCarousel';
+import PanController from '../services/PanController';
+
+const screen = Dimensions.get('window');
+
+const ASPECT_RATIO = screen.width / screen.height;
+const LATITUDE_DELTA = 0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const mapStyle = [
   {
@@ -210,9 +230,18 @@ class MapScreen extends React.Component {
 
   constructor(props) {
     super(props);
+    this._mapView = null;
     this.state = {
-      mapLoading: true
+      region: {
+        latitude: 42.348349,
+        longitude: -71.069272,
+        latitudeDelta: LATITUDE_DELTA,
+        longitudeDelta: LONGITUDE_DELTA
+      },
+      carouselOpen: false
     };
+
+    this.goToDestination = this.goToDestination.bind(this);
   }
 
   componentDidMount() {
@@ -221,10 +250,27 @@ class MapScreen extends React.Component {
 
   componentWillUnmount() {}
 
+  goToDestination(destination) {
+    this._mapView.fitToCoordinates(
+      [
+        {
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA
+        }
+      ],
+      2000
+    );
+  }
+
   render() {
     return (
       <View style={styles.container}>
         <MapView
+          ref={mapView => {
+            this._mapView = mapView;
+          }}
           style={styles.map}
           customMapStyle={mapStyle}
           provider={PROVIDER_GOOGLE}
@@ -234,14 +280,28 @@ class MapScreen extends React.Component {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421
           }}
+          // region={this.state.region}
         >
-          {/*{this.props.destinations*/}
-          {/*  ? this.props.destinations.map(destination => {*/}
-          {/*      console.log(destination);*/}
-          {/*      return <Marker coordinate={destination.coordinate} />;*/}
-          {/*    })*/}
-          {/*  : null}*/}
+          {this.props.destinations.map(destination => {
+            return (
+              <Marker
+                key={destination.id}
+                coordinate={destination.coordinate}
+              />
+            );
+          })}
         </MapView>
+        <ActivityIndicator
+          style={styles.loadingSpinner}
+          animating={this.props.destinationsLoading}
+          size="small"
+          color="#00ff00"
+        />
+        <DestinationCarousel
+          style={styles.carousel}
+          destinations={this.props.destinations}
+          goToDestination={this.goToDestination}
+        />
       </View>
     );
   }
@@ -249,6 +309,7 @@ class MapScreen extends React.Component {
 
 const mapStateToProps = state => {
   return {
+    destinationsLoading: state.destinationsLoading,
     destinations: state.destinationData
   };
 };
@@ -269,10 +330,19 @@ const ConnectedMapScreen = connect(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
     backgroundColor: 'white'
   },
   map: {
-    flex: 1
+    ...StyleSheet.absoluteFillObject
+  },
+  loadingSpinner: {
+    position: 'absolute',
+    bottom: 400
+  },
+  carousel: {
+    position: 'absolute',
+    bottom: 50
   }
 });
 

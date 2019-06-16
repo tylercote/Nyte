@@ -107,7 +107,10 @@ export function fetchDestinations() {
       .then(res => res.json())
       .then(res => {
         console.log(res);
-        dispatch({ type: GET_DESTINATION_DATA_RECEIVED, payload: res.data });
+        dispatch({
+          type: GET_DESTINATION_DATA_RECEIVED,
+          payload: res.destinations
+        });
       })
       .catch(err => {
         dispatch({ type: GET_DESTINATION_DATA_ERROR, payload: err });
